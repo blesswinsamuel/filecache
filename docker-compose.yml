@@ -1,0 +1,12 @@
+version: "3.7"
+
+services:
+  filecache:
+    image: blesswinsamuel/filecache:latest
+    build:
+      context: .
+      dockerfile: Prod.Dockerfile
+    environment:
+      PORT: 3006
+    ports:
+      - 3006:3006
