@@ -2,16 +2,18 @@ name: Docker
 
 on:
   push:
-    # Publish `master` as Docker `latest` image.
+    # Publish `main` as Docker `latest` image.
     branches:
-      - master
+      - main
 
     # Publish `v1.2.3` tags as releases.
     tags:
       - v*
 
 env:
+  # TODO: Change variable to your image's name.
   IMAGE_NAME: ${{ github.repository }}
+  DOCKER_CLI_EXPERIMENTAL: enabled
 
 jobs:
   build:
@@ -26,31 +28,26 @@ jobs:
       - name: Build the Docker image
         run: |
           IMAGE_ID=$IMAGE_NAME
-
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-
           # Strip "v" prefix from tag name
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-
           # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=latest
-
+          [ "$VERSION" == "main" ] && VERSION=latest
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-
-          docker build -t $IMAGE_ID:$VERSION .
-          docker push $IMAGE_ID:$VERSION
-
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          docker buildx create --name mybuilder --driver docker-container --use
+          docker buildx inspect --bootstrap
+          docker buildx build --platform linux/amd64,linux/arm64 -t $IMAGE_ID:$VERSION --push .
       - name: Slack Notification
         uses: homoluctus/slatify@v2.1.2
         if: always()
         with:
           type: ${{ job.status }}
-          job_name: "*Deploy* ${{github.repository}}"
+          job_name: "*Docker publish* ${{github.repository}}"
           mention: "here"
           mention_if: "failure"
           channel: "#github"
