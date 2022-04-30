@@ -2,7 +2,7 @@ FROM --platform=$BUILDPLATFORM golang:1.18-alpine AS builder
 
 WORKDIR /app
 
-# RUN apk add --no-cache git
+RUN apk add --no-cache git
 
 # RUN go get github.com/githubnemo/CompileDaemon
 
