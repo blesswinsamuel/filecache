@@ -1,4 +1,4 @@
-FROM golang:1.14-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.18-alpine AS builder
 
 WORKDIR /app
 
@@ -12,12 +12,14 @@ RUN go mod download
 
 COPY . .
 
-RUN go install .
+ARG TARGETOS
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o filecache .
 
-FROM alpine
+FROM --platform=$BUILDPLATFORM alpine
 
 # Copy our static executable.
-COPY --from=builder /go/bin/filecache /go/bin/filecache
+COPY --from=builder /app/filecache /go/bin/filecache
 # Run the hello binary.
 
 CMD ["/go/bin/filecache"]
